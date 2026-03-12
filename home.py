@@ -90,5 +90,14 @@ def get_currency_rate(current):
     else :
         print("Unsupported currency ")
         return None
-
     
+#Task 3 Create a function save_conversion(currency, amount, result) that saves conversion history in currency_history.txt.
+
+def save_conversion(currency, amount, result):
+
+    file = open("currency_history.txt", "a")
+
+    file.write(f"{currency} {amount} -> NPR {result}\n")
+
+    file.close()
+
