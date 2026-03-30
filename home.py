@@ -38,10 +38,13 @@
 # #     #----------------Task 4 : Transaction Report ----------
 # #     print("\n======== Conversion History Report ========")
 
-# for i, transaction in enumerate(transactions, start=1):
-#     currency, amount, converted_amount = transaction
-#     print(f"Transaction {i}: {currency} {amount} -> NPR {converted_amount}")
 
+# """
+# Program: Currency Converter
+# Description: This program defines a function convert_currency(amount, rate)
+# that converts a foreign currency amount into Nepalese Rupees (NPR)
+# using a given exchange rate.
+# """
 
 # # """
 # # Program: Currency Converter
@@ -178,6 +181,7 @@ for i in range(num_request):
 
 print_conversion_report()
 
+create_table()
 
 
 
