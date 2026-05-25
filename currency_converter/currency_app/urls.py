@@ -1,8 +1,8 @@
-# currency_app/urls.py
 from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("", views.home),
     path("create/", views.create_conversion),
     path("all/", views.get_all_conversion),
     path("<int:id>/", views.get_single_conversion),

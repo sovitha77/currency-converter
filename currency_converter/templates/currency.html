@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>मुद्रा Converter — Nepal Currency</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f1f5f9; min-height: 100vh; }
+
+  /* ── Topbar ── */
+  .topbar { background: #1e293b; border-bottom: 1px solid #334155; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .logo { font-size: 18px; font-weight: 700; color: #f8fafc; letter-spacing: -0.3px; }
+  .logo span { color: #38bdf8; }
+  .lang-toggle { display: flex; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+  .lang-btn { padding: 5px 14px; font-size: 13px; cursor: pointer; background: transparent; color: #94a3b8; border: none; transition: all .2s; }
+  .lang-btn.active { background: #38bdf8; color: #0f172a; font-weight: 700; }
+  #datetime { font-size: 12px; color: #64748b; }
+
+  /* ── Layout ── */
+  .main { display: grid; grid-template-columns: 1fr 340px; min-height: calc(100vh - 49px); }
+  .left-panel { padding: 28px 24px; border-right: 1px solid #1e293b; }
+  .right-panel { background: #0a1628; overflow: hidden; }
+
+  /* ── Section label ── */
+  .section-title { font-size: 12px; font-weight: 600; letter-spacing: .8px; color: #38bdf8; text-transform: uppercase; margin-bottom: 16px; }
+
+  /* ── Live rates grid ── */
+  .rates-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+  .rate-tile { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all .2s; }
+  .rate-tile:hover { border-color: #38bdf8; background: #1e3a5f; }
+  .rate-tile .currency { font-size: 11px; color: #64748b; font-weight: 600; }
+  .rate-tile .value { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-top: 2px; }
+  .rate-tile .change { font-size: 11px; margin-top: 2px; }
+  .up { color: #4ade80; }
+  .down { color: #f87171; }
+
+  /* ── Converter card ── */
+  .converter-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+  .conv-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: end; margin-bottom: 16px; }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 12px; color: #64748b; font-weight: 500; }
+  .field-label .ne { font-size: 11px; color: #475569; display: block; }
+  input[type="number"], select {
+    width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+    padding: 11px 14px; color: #f1f5f9; font-size: 15px; outline: none; transition: border .2s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]:focus, select:focus { border-color: #38bdf8; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  select option { background: #1e293b; }
+
+  .swap-btn {
+    background: #334155; border: none; border-radius: 10px; width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #38bdf8; font-size: 18px; transition: all .2s; flex-shrink: 0;
+  }
+  .swap-btn:hover { background: #38bdf8; color: #0f172a; }
+
+  .select-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+  .convert-btn {
+    width: 100%; padding: 13px; background: #38bdf8; color: #0f172a;
+    border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .2s;
+  }
+  .convert-btn:hover { background: #7dd3fc; }
+  .convert-btn:active { transform: scale(.98); }
+
+  /* ── Result ── */
+  .result-card {
+    background: #0f172a; border: 1px solid #1d4ed8; border-radius: 12px;
+    padding: 18px 20px; margin-top: 16px; display: none;
+  }
+  .result-card.show { display: block; }
+  .result-amount { font-size: 28px; font-weight: 700; color: #38bdf8; margin-bottom: 4px; }
+  .result-rate { font-size: 13px; color: #64748b; }
+  .result-secondary { font-size: 13px; color: #475569; margin-top: 4px; }
+
+  /* ── Error / Loading ── */
+  .error-msg {
+    background: #450a0a; border: 1px solid #dc2626; border-radius: 10px;
+    padding: 12px 16px; color: #fca5a5; font-size: 13px; margin-top: 12px; display: none;
+  }
+  .error-msg.show { display: block; }
+  .loading { display: none; text-align: center; padding: 14px; color: #64748b; font-size: 13px; }
+  .loading.show { display: block; }
+
+  /* ── History ── */
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item {
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .history-from { font-size: 13px; color: #94a3b8; }
+  .history-result { font-size: 14px; font-weight: 600; color: #38bdf8; }
+  .history-time { font-size: 11px; color: #475569; margin-top: 2px; }
+
+  /* ── News sidebar ── */
+  .news-header { background: #1e293b; border-bottom: 1px solid #334155; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .news-header-title { font-size: 13px; font-weight: 700; color: #f1f5f9; }
+  .news-ticker { overflow: hidden; background: #1d4ed8; padding: 7px 14px; font-size: 12px; color: #bfdbfe; white-space: nowrap; }
+  .ticker-inner { display: inline-block; animation: ticker 30s linear infinite; }
+  @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+  .news-items { overflow-y: auto; max-height: calc(100vh - 145px); }
+  .news-item { padding: 14px 16px; border-bottom: 1px solid #1e293b; cursor: pointer; transition: background .15s; }
+  .news-item:hover { background: #1e293b; }
+  .news-cat { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; letter-spacing: .4px; }
+  .cat-forex    { background: #1d4ed8; color: #bfdbfe; }
+  .cat-economy  { background: #065f46; color: #6ee7b7; }
+  .cat-market   { background: #7c2d12; color: #fdba74; }
+  .cat-nepal    { background: #5b21b6; color: #c4b5fd; }
+  .news-title { font-size: 13px; font-weight: 600; color: #e2e8f0; line-height: 1.4; margin-bottom: 4px; }
+  .news-subtitle { font-size: 12px; color: #64748b; line-height: 1.4; margin-bottom: 6px; }
+  .news-meta { font-size: 11px; color: #475569; display: flex; gap: 8px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; }
+    .right-panel { border-top: 1px solid #1e293b; }
+    .rates-grid { grid-template-columns: repeat(2, 1fr); }
+    .news-items { max-height: 400px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="logo">मुद्रा<span>Converter</span></div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="btn-ne" onclick="setLang('ne')">NE</button>
+    </div>
+  </div>
+  <div id="datetime"></div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: Converter -->
+  <div class="left-panel">
+
+    <div class="section-title" id="lbl-rates">Live rates · NPR base</div>
+    <div class="rates-grid" id="rates-grid"></div>
+
+    <div class="converter-card">
+      <!-- Amount + Result -->
+      <div class="conv-row">
+        <div class="field-group">
+          <label class="field-label">
+            <span id="lbl-amount">Amount</span>
+            <span class="ne" id="lbl-amount-ne">रकम</span>
+          </label>
+          <input type="number" id="amount" placeholder="1000" value="1000" min="0">
+        </div>
+        <button class="swap-btn" onclick="swapCurrencies()" title="Swap currencies">⇄</button>
+        <div class="field-group">
+          <label class="field-label">
+            <span id="lbl-result">Result</span>
+            <span class="ne" id="lbl-result-ne">परिणाम</span>
+          </label>
+          <input type="number" id="result-input" placeholder="—" readonly style="color:#38bdf8">
+        </div>
+      </div>
+
+      <!-- Currency selects -->
+      <div class="select-row">
+        <div class="field-group">
+          <label class="field-label">
+            <span id="lbl-from">From</span>
+            <span class="ne">बाट</span>
+          </label>
+          <select id="from_currency"></select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">
+            <span id="lbl-to">To</span>
+            <span class="ne">मा</span>
+          </label>
+          <select id="to_currency"></select>
+        </div>
+      </div>
+
+      <button class="convert-btn" id="convert-btn" onclick="convertCurrency()">Convert →</button>
+
+      <div class="error-msg" id="error-msg"></div>
+      <div class="loading" id="loading">Converting...</div>
+
+      <div class="result-card" id="result-card">
+        <div class="result-amount" id="result-amount"></div>
+        <div class="result-rate" id="result-rate"></div>
+        <div class="result-secondary" id="result-secondary"></div>
+      </div>
+    </div>
+
+    <div class="section-title" id="lbl-history">Recent conversions</div>
+    <div class="history-list" id="history-list">
+      <div style="color:#475569;font-size:13px;padding:8px 0" id="lbl-no-history">
+        No conversions yet. Try converting above!
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: News -->
+  <div class="right-panel">
+    <div class="news-header">
+      <div class="news-header-title" id="lbl-news">Financial News · वित्तीय समाचार</div>
+      <div style="font-size:11px;color:#475569" id="news-count"></div>
+    </div>
+    <div class="news-ticker">
+      <div class="ticker-inner">
+        USD/NPR: 132.50 &nbsp;|&nbsp; EUR/NPR: 143.20 &nbsp;|&nbsp; GBP/NPR: 168.90 &nbsp;|&nbsp;
+        INR/NPR: 1.59 &nbsp;|&nbsp; Gold: $2,340/oz &nbsp;|&nbsp; NRB Rate Updated &nbsp;|&nbsp;
+        Remittance up 12% YoY &nbsp;|&nbsp; NEPSE: 2,134 pts ▲
+      </div>
+    </div>
+    <div class="news-items" id="news-items"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── Data ───────────────────────────────────────────────────────────────────
+
+const RATES = {
+  USD:1, EUR:0.92, GBP:0.78, INR:83, JPY:150, AUD:1.52, CAD:1.36,
+  CHF:0.88, CNY:7.2, SGD:1.34, NPR:132, PKR:278, BDT:110, AED:3.67, KRW:1330, LKR:320
+};
+const NAMES_EN = {
+  USD:"US Dollar", EUR:"Euro", GBP:"British Pound", INR:"Indian Rupee",
+  JPY:"Japanese Yen", AUD:"Australian Dollar", CAD:"Canadian Dollar",
+  CHF:"Swiss Franc", CNY:"Chinese Yuan", SGD:"Singapore Dollar",
+  NPR:"Nepali Rupee", PKR:"Pakistani Rupee", BDT:"Bangladeshi Taka",
+  AED:"UAE Dirham", KRW:"South Korean Won", LKR:"Sri Lankan Rupee"
+};
+const NAMES_NE = {
+  USD:"अमेरिकी डलर", EUR:"युरो", GBP:"ब्रिटिश पाउन्ड", INR:"भारतीय रुपैयाँ",
+  JPY:"जापानी येन", AUD:"अस्ट्रेलियन डलर", CAD:"क्यानेडियन डलर",
+  CHF:"स्विस फ्र्याङ्क", CNY:"चिनियाँ युआन", SGD:"सिंगापुर डलर",
+  NPR:"नेपाली रुपैयाँ", PKR:"पाकिस्तानी रुपैयाँ", BDT:"बङ्गलादेशी टका",
+  AED:"यूएई दिरहाम", KRW:"दक्षिण कोरियाली वोन", LKR:"श्रीलंकाली रुपैयाँ"
+};
+
+const NEWS = [
+  { cat:"forex",    en:"NRB revises exchange rates for mid-May 2026",                        ne:"NRB ले मध्य-मे २०२६ को विनिमय दर संशोधन गर्यो",              time:"2h ago · २ घण्टा पहिले", src:"NRB" },
+  { cat:"economy",  en:"Nepal remittance inflows surge 12% in FY 2025/26",                  ne:"नेपालमा रेमिट्यान्स आय आर्थिक वर्षमा १२% ले बढ्यो",         time:"4h ago · ४ घण्टा पहिले", src:"Himalayan Times" },
+  { cat:"market",   en:"Dollar strengthens against major Asian currencies amid Fed signals", ne:"फेडको संकेतका बीच डलर एशियाली मुद्राविरुद्ध मजबुत",         time:"5h ago · ५ घण्टा पहिले", src:"Reuters" },
+  { cat:"nepal",    en:"NEPSE closes at 2,134 points, up 0.8% on Tuesday",                 ne:"नेप्से मङ्गलबार ०.८% बढेर २,१३४ अंकमा बन्द",               time:"6h ago · ६ घण्टा पहिले", src:"Mero Lagani" },
+  { cat:"forex",    en:"Indian Rupee holds at 1.59 NPR amid trade balance concerns",        ne:"व्यापार सन्तुलन चिन्ताका बीच INR १.५९ NPR मा स्थिर",        time:"7h ago · ७ घण्टा पहिले", src:"NRB" },
+  { cat:"economy",  en:"World Bank projects Nepal GDP growth at 5.1% for 2026",             ne:"विश्व बैंकले नेपालको GDP वृद्धि ५.१% रहने अनुमान गर्यो",    time:"8h ago · ८ घण्टा पहिले", src:"World Bank" },
+  { cat:"market",   en:"Gold prices retreat from record highs, silver follows",             ne:"सुनको मूल्य रेकर्ड उचाइबाट घट्यो, चाँदी पनि घट्यो",       time:"10h ago · १० घण्टा पहिले",src:"Bloomberg" },
+  { cat:"nepal",    en:"NRB issues new directive on digital payment limits for 2026",       ne:"NRB ले डिजिटल भुक्तानी सीमामा नयाँ निर्देशन जारी गर्यो",  time:"1d ago · १ दिन पहिले",   src:"Nepal Rastra Bank" },
+  { cat:"forex",    en:"EUR/USD edges higher as ECB holds rates steady",                    ne:"ECB ले दर स्थिर राख्दा EUR/USD माथि उक्लियो",               time:"1d ago · १ दिन पहिले",   src:"FX Street" },
+  { cat:"economy",  en:"Nepal's tourism revenue hits NPR 85 billion in 2025/26",           ne:"नेपालको पर्यटन आय NPR ८५ अर्ब पुग्यो",                      time:"2d ago · २ दिन पहिले",   src:"Ministry of Tourism" },
+];
+
+const CAT_CLASS = { forex:"cat-forex", economy:"cat-economy", market:"cat-market", nepal:"cat-nepal" };
+const CAT_LABEL = { forex:"FOREX", economy:"ECONOMY", market:"MARKET", nepal:"नेपाल" };
+
+const LABELS = {
+  en: { rates:"Live rates · NPR base", history:"Recent conversions", noHistory:"No conversions yet. Try converting above!", news:"Financial News · वित्तीय समाचार", convert:"Convert →", loading:"Converting..." },
+  ne: { rates:"विनिमय दर · NPR आधार",  history:"हालका रूपान्तरणहरू",   noHistory:"अहिलेसम्म कुनै रूपान्तरण छैन।",              news:"वित्तीय समाचार · Financial News",  convert:"रूपान्तरण गर्नुहोस् →", loading:"रूपान्तरण हुँदैछ..." }
+};
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let currentLang = "en";
+let conversionHistory = [];
+
+// ─── Clock ───────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById("datetime").textContent =
+    now.toLocaleDateString("en-NP", { weekday:"short", year:"numeric", month:"short", day:"numeric" }) +
+    "  " + now.toLocaleTimeString("en-NP", { hour:"2-digit", minute:"2-digit" });
+}
+
+// ─── Language ────────────────────────────────────────────────────────────────
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById("btn-en").classList.toggle("active", lang === "en");
+  document.getElementById("btn-ne").classList.toggle("active", lang === "ne");
+  const L = LABELS[lang];
+  document.getElementById("lbl-rates").textContent = L.rates;
+  document.getElementById("lbl-history").textContent = L.history;
+  document.getElementById("lbl-news").textContent = L.news;
+  document.getElementById("convert-btn").textContent = L.convert;
+  document.getElementById("loading").textContent = L.loading;
+  const nh = document.getElementById("lbl-no-history");
+  if (nh) nh.textContent = L.noHistory;
+  renderNews();
+  renderHistory();
+}
+
+// ─── Selects ─────────────────────────────────────────────────────────────────
+function buildSelects() {
+  ["from_currency", "to_currency"].forEach(id => {
+    const sel = document.getElementById(id);
+    Object.keys(RATES).forEach(code => {
+      const opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = code + " — " + NAMES_EN[code];
+      sel.appendChild(opt);
+    });
+  });
+  document.getElementById("from_currency").value = "USD";
+  document.getElementById("to_currency").value = "NPR";
+}
+
+// ─── Live rates tiles ─────────────────────────────────────────────────────────
+function buildRatesGrid() {
+  const showcase = ["USD","EUR","GBP","INR","AED","SGD"];
+  const changes  = { USD:"+0.12%", EUR:"-0.08%", GBP:"+0.21%", INR:"-0.04%", AED:"0.00%", SGD:"+0.09%" };
+  const grid = document.getElementById("rates-grid");
+  grid.innerHTML = "";
+  showcase.forEach(code => {
+    const rateToNPR = (RATES["NPR"] / RATES[code]).toFixed(2);
+    const chg = changes[code];
+    const isUp = chg.startsWith("+");
+    const tile = document.createElement("div");
+    tile.className = "rate-tile";
+    tile.title = "Click to select " + code + " → NPR";
+    tile.onclick = () => {
+      document.getElementById("from_currency").value = code;
+      document.getElementById("to_currency").value = "NPR";
+    };
+    tile.innerHTML = `
+      <div class="currency">${code}/NPR</div>
+      <div class="value">${rateToNPR}</div>
+      <div class="change ${isUp ? "up" : "down"}">${isUp ? "▲" : "▼"} ${chg}</div>`;
+    grid.appendChild(tile);
+  });
+}
+
+// ─── News ────────────────────────────────────────────────────────────────────
+function renderNews() {
+  const container = document.getElementById("news-items");
+  container.innerHTML = "";
+  document.getElementById("news-count").textContent = NEWS.length + " stories";
+  NEWS.forEach(n => {
+    const primary   = currentLang === "ne" ? n.ne : n.en;
+    const secondary = currentLang === "ne" ? n.en : n.ne;
+    const item = document.createElement("div");
+    item.className = "news-item";
+    item.innerHTML = `
+      <span class="news-cat ${CAT_CLASS[n.cat]}">${CAT_LABEL[n.cat]}</span>
+      <div class="news-title">${primary}</div>
+      <div class="news-subtitle">${secondary}</div>
+      <div class="news-meta"><span>${n.src}</span><span>·</span><span>${n.time}</span></div>`;
+    container.appendChild(item);
+  });
+}
+
+// ─── Swap ────────────────────────────────────────────────────────────────────
+function swapCurrencies() {
+  const f = document.getElementById("from_currency");
+  const t = document.getElementById("to_currency");
+  [f.value, t.value] = [t.value, f.value];
+  document.getElementById("result-card").classList.remove("show");
+  document.getElementById("result-input").value = "";
+}
+
+// ─── Convert ─────────────────────────────────────────────────────────────────
+async function convertCurrency() {
+  const amount  = document.getElementById("amount").value;
+  const from    = document.getElementById("from_currency").value;
+  const to      = document.getElementById("to_currency").value;
+  const errEl   = document.getElementById("error-msg");
+  const loadEl  = document.getElementById("loading");
+  const resCard = document.getElementById("result-card");
+
+  errEl.classList.remove("show");
+  resCard.classList.remove("show");
+
+  if (!amount || parseFloat(amount) <= 0) {
+    errEl.textContent = currentLang === "ne"
+      ? "कृपया मान्य रकम प्रविष्ट गर्नुहोस्।"
+      : "Please enter a valid amount greater than 0.";
+    errEl.classList.add("show");
+    return;
+  }
+  if (from === to) {
+    errEl.textContent = currentLang === "ne"
+      ? "कृपया फरक मुद्राहरू छान्नुहोस्।"
+      : "Please select two different currencies.";
+    errEl.classList.add("show");
+    return;
+  }
+
+  loadEl.classList.add("show");
+
+  try {
+    const res = await fetch("/currency/create/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: parseFloat(amount), from_currency: from, to_currency: to })
+    });
+
+    const data = await res.json();
+    loadEl.classList.remove("show");
+
+    if (data.error) {
+      errEl.textContent = data.error;
+      errEl.classList.add("show");
+      return;
+    }
+
+    document.getElementById("result-input").value = data.converted_amount.toFixed(2);
+    document.getElementById("result-amount").textContent =
+      data.converted_amount.toLocaleString("en-NP", { minimumFractionDigits:2, maximumFractionDigits:2 }) + " " + to;
+    document.getElementById("result-rate").textContent =
+      `1 ${from} = ${data.conversion_rate.toFixed(4)} ${to}`;
+    document.getElementById("result-secondary").textContent =
+      currentLang === "ne"
+        ? `${NAMES_NE[from]} → ${NAMES_NE[to]}`
+        : `${NAMES_EN[from]} → ${NAMES_EN[to]}`;
+    resCard.classList.add("show");
+
+    const now = new Date();
+    conversionHistory.unshift({
+      amount, from, to,
+      converted: data.converted_amount.toFixed(2),
+      rate: data.conversion_rate.toFixed(4),
+      time: now.toLocaleTimeString("en-NP", { hour:"2-digit", minute:"2-digit" })
+    });
+    if (conversionHistory.length > 6) conversionHistory.pop();
+    renderHistory();
+
+  } catch (e) {
+    loadEl.classList.remove("show");
+    errEl.textContent = currentLang === "ne"
+      ? "सर्भरमा जडान गर्न सकिएन। पुनः प्रयास गर्नुहोस्।"
+      : "Could not connect to server. Please try again.";
+    errEl.classList.add("show");
+  }
+}
+
+// ─── History ─────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById("history-list");
+  if (!conversionHistory.length) {
+    list.innerHTML = `<div style="color:#475569;font-size:13px;padding:8px 0" id="lbl-no-history">${LABELS[currentLang].noHistory}</div>`;
+    return;
+  }
+  list.innerHTML = conversionHistory.map(h => `
+    <div class="history-item">
+      <div>
+        <div class="history-from">${parseFloat(h.amount).toLocaleString()} ${h.from} → ${h.to}</div>
+        <div class="history-time">${h.time} &nbsp;·&nbsp; rate: ${h.rate}</div>
+      </div>
+      <div class="history-result">
+        ${parseFloat(h.converted).toLocaleString("en-NP", { minimumFractionDigits:2, maximumFractionDigits:2 })} ${h.to}
+      </div>
+    </div>`).join("");
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+buildSelects();
+buildRatesGrid();
+renderNews();
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+</body>
+</html>

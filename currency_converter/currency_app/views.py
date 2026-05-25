@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import CurrencyConversion
@@ -24,11 +25,14 @@ RATES = {
 }
 
 print("API HIT")
+
+def home(request):
+    return render(request, "currency.html")
 # ----------------------------
 # Conversion logic (SAFE)
 # ----------------------------
 def convert_currency(amount, from_currency, to_currency):
-    amount = float(amount)  # 🔥 FIX: ensure numeric
+    amount = float(amount)  
 
     from_rate = RATES[from_currency]
     to_rate = RATES[to_currency]
